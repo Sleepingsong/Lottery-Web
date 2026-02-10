@@ -409,7 +409,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                   </div>
 
                   <div className="flex-1 flex items-center justify-center mb-8">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6">
+                    <div className="flex flex-wrap justify-center gap-4 md:gap-6">
                       {animatingNumbers.length > 0 ? (
                         <>
                           {confirmedNumbers.map((num, idx) => (
