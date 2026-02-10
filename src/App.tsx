@@ -56,6 +56,14 @@ function AdminPanel() {
     setScreen('setup');
   };
 
+  const handleOpenDisplay = () => {
+    // Open the display page in a new window
+    const displayWindow = window.open('#/display', 'LotteryDisplayWindow');
+    if (displayWindow) {
+      displayWindow.focus();
+    }
+  };
+
   return (
     <>
       {screen === 'setup' ? (
@@ -63,6 +71,7 @@ function AdminPanel() {
           prizes={prizes}
           onPrizesChange={setPrizes}
           onStartDraw={handleStartDraw}
+          onOpenDisplay={handleOpenDisplay}
         />
       ) : (
         <DrawingPage

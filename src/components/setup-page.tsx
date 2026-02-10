@@ -1,5 +1,5 @@
-import React from 'react';
-import { Plus, Trash2, Trophy, Gift, Hash, ArrowUpDown, Sparkles, Info, CheckCircle, HelpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Trash2, Trophy, Gift, Hash, ArrowUpDown, Sparkles, Info, CheckCircle, HelpCircle, Monitor } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -18,11 +18,12 @@ interface SetupPageProps {
   prizes: Prize[];
   onPrizesChange: (prizes: Prize[]) => void;
   onStartDraw: (drawOrder: DrawOrder) => void;
+  onOpenDisplay: () => void;
 }
 
-export function SetupPage({ prizes, onPrizesChange, onStartDraw }: SetupPageProps) {
-  const [drawOrder, setDrawOrder] = React.useState<DrawOrder>('descending');
-  
+export function SetupPage({ prizes, onPrizesChange, onStartDraw, onOpenDisplay }: SetupPageProps) {
+  const [drawOrder, setDrawOrder] = useState<DrawOrder>('descending');
+
   const addPrize = () => {
     // Calculate the next prize number
     const prizeNumbers = prizes
@@ -31,9 +32,9 @@ export function SetupPage({ prizes, onPrizesChange, onStartDraw }: SetupPageProp
         return match ? parseInt(match[1]) : 0;
       })
       .filter((n) => n > 0);
-    
+
     const nextNumber = prizeNumbers.length > 0 ? Math.max(...prizeNumbers) + 1 : prizes.length + 1;
-    
+
     const newPrize: Prize = {
       id: Date.now().toString(),
       name: `รางวัลที่ ${nextNumber}`,
@@ -58,14 +59,24 @@ export function SetupPage({ prizes, onPrizesChange, onStartDraw }: SetupPageProp
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center p-4 pt-28">
       {/* Header Bar with Logo */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-blue-900/95 backdrop-blur-md border-b border-blue-800/30 shadow-lg">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full flex items-center justify-center shadow-lg p-1">
-            <img src={fdaLogo} alt="FDA Logo" className="w-full h-full object-contain" />
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full flex items-center justify-center shadow-lg p-1">
+              <img src={fdaLogo} alt="FDA Logo" className="w-full h-full object-contain" />
+            </div>
+            <div className="text-left">
+              <div className="text-white text-sm font-semibold drop-shadow-lg">สำนักงานคณะกรรมการอาหารและยา</div>
+              <div className="text-blue-100 text-xs drop-shadow-lg">Food and Drug Administration</div>
+            </div>
           </div>
-          <div className="text-left">
-            <div className="text-white text-sm font-semibold drop-shadow-lg">สำนักงานคณะกรรมการอาหารและยา</div>
-            <div className="text-blue-100 text-xs drop-shadow-lg">Food and Drug Administration</div>
-          </div>
+          <Button
+            onClick={onOpenDisplay}
+            variant="ghost"
+            className="text-white hover:bg-white/10 flex gap-2"
+          >
+            <Monitor className="h-4 w-4" />
+            <span className="hidden sm:inline">เปิดจอแสดงผล</span>
+          </Button>
         </div>
       </div>
 
@@ -208,11 +219,10 @@ export function SetupPage({ prizes, onPrizesChange, onStartDraw }: SetupPageProp
               <div className="flex gap-3">
                 <button
                   onClick={() => setDrawOrder('descending')}
-                  className={`flex-1 py-3 px-4 rounded-xl border transition-all ${
-                    drawOrder === 'descending'
-                      ? 'bg-blue-600 border-blue-600 text-white shadow-md'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`flex-1 py-3 px-4 rounded-xl border transition-all ${drawOrder === 'descending'
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
                 >
                   <div className="text-sm mb-1 font-medium flex items-center justify-center gap-2">
                     <Sparkles className="h-4 w-4" />
@@ -222,11 +232,10 @@ export function SetupPage({ prizes, onPrizesChange, onStartDraw }: SetupPageProp
                 </button>
                 <button
                   onClick={() => setDrawOrder('ascending')}
-                  className={`flex-1 py-3 px-4 rounded-xl border transition-all ${
-                    drawOrder === 'ascending'
-                      ? 'bg-blue-600 border-blue-600 text-white shadow-md'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`flex-1 py-3 px-4 rounded-xl border transition-all ${drawOrder === 'ascending'
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
                 >
                   <div className="text-sm mb-1 font-medium flex items-center justify-center gap-2">
                     <Sparkles className="h-4 w-4" />
