@@ -498,7 +498,10 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                   </div>
 
                   <div className={`flex-1 min-h-0 overflow-y-auto mb-8 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex flex-col ${layout.containerPadding}`}>
-                    <div className={`grid grid-cols-10 auto-rows-min content-start w-full ${layout.gap}`}>
+                    <div
+                      className={`grid w-full ${layout.gap}`}
+                      style={{ gridTemplateColumns: 'repeat(10, 1fr)' }}
+                    >
                       {/* 1. Show existing drawn numbers */}
                       {drawnNumbers.map((num, idx) => {
                         const isConfirmed = confirmedNumbers.includes(num);
@@ -540,7 +543,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                             transition={{
                               type: 'spring', stiffness: 300, damping: 20
                             }}
-                            className="relative flex flex-col gap-2 cursor-pointer aspect-square"
+                            className="relative flex flex-col gap-2 cursor-pointer"
+                            style={{ aspectRatio: '1/1' }}
                             onClick={() => handleNumberClick(num)}
                           >
                             <div className={`w-full h-full relative flex items-center justify-center shadow-lg transition-all duration-200 rounded-lg md:rounded-xl ${bgClass} ${layout.box}`}>
@@ -560,7 +564,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                           initial={{ scale: 0.5, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={{ delay: idx * layout.stagger, type: 'spring', stiffness: 300, damping: 20 }}
-                          className={`relative flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl aspect-square ${layout.box}`}
+                          className={`relative flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl ${layout.box}`}
+                          style={{ aspectRatio: '1/1' }}
                         >
                           <motion.div
                             animate={{ scale: [1, 1.1, 1] }}
@@ -582,7 +587,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                               initial={{ scale: 0.5, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
                               transition={{ delay: idx * layout.stagger }}
-                              className={`relative flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl aspect-square ${layout.box}`}
+                              className={`relative flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl ${layout.box}`}
+                              style={{ aspectRatio: '1/1' }}
                             />
                           ))
                       )}
