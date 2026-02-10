@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trophy, ArrowLeft, Sparkles, Download, Plus } from 'lucide-react';
+import { Trophy, ArrowLeft, Sparkles, Download, Plus, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { motion, AnimatePresence } from 'motion/react';
 import { Prize, DrawOrder } from './setup-page';
@@ -349,6 +349,35 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     }
   };
 
+  const handleConfirmAll = () => {
+    if (role !== 'admin') return;
+    const pendingNumbers = drawnNumbers.filter(n => !confirmedNumbers.includes(n));
+    if (pendingNumbers.length === 0) return;
+
+    const newWinners = pendingNumbers.map(num => ({
+      id: Date.now().toString() + Math.random(),
+      prizeName: currentPrize.name,
+      number: num,
+      timestamp: Date.now(),
+    }));
+
+    setWinners(prev => [...prev, ...newWinners]);
+    setConfirmedNumbers(prev => [...prev, ...pendingNumbers]);
+    setConfirmedCount(prev => prev + pendingNumbers.length);
+    setUsedNumbers(prev => new Set([...prev, ...pendingNumbers]));
+  };
+
+  const handleUnconfirmAll = () => {
+    if (role !== 'admin') return;
+    const numbersToUnconfirm = drawnNumbers.filter(n => confirmedNumbers.includes(n));
+    if (numbersToUnconfirm.length === 0) return;
+
+    setWinners(prev => prev.filter(w => !numbersToUnconfirm.includes(w.number)));
+    setConfirmedNumbers(prev => prev.filter(n => !numbersToUnconfirm.includes(n)));
+    setConfirmedCount(prev => Math.max(0, prev - numbersToUnconfirm.length));
+    // Note: Do not remove from usedNumbers as they revert to Blue (Pending)
+  };
+
   const drawRemainingNumbers = () => {
     if (role === 'admin') startBatchDraw();
   };
@@ -405,38 +434,38 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
   const getSizeClasses = (qty: number) => {
     // Shared defaults
     const common = {
-      box: "", // Ensure no undefined class
+      box: "",
     };
 
     if (qty > 100) return {
       ...common,
-      text: "text-xs md:text-sm font-extrabold",
-      gap: "gap-1",
-      iconSize: "h-2 w-2",
+      text: "text-lg md:text-xl font-extrabold",
+      gap: "gap-1.5",
+      iconSize: "h-3 w-3",
       iconPos: "-top-1 -right-1",
       stagger: 0.002,
-      containerPadding: "p-2"
+      containerPadding: "p-3"
     };
 
     if (qty > 50) return {
       ...common,
-      text: "text-sm md:text-base font-extrabold",
-      gap: "gap-1.5",
-      iconSize: "h-3 w-3",
-      iconPos: "-top-1.5 -right-1.5",
-      stagger: 0.005,
-      containerPadding: "p-3"
-    };
-
-    // Default / Standard
-    return {
-      ...common,
-      text: "text-base md:text-2xl font-black",
+      text: "text-2xl md:text-3xl font-extrabold",
       gap: "gap-2",
       iconSize: "h-4 w-4",
-      iconPos: "-top-2 -right-2",
-      stagger: 0.05,
+      iconPos: "-top-1.5 -right-1.5",
+      stagger: 0.005,
       containerPadding: "p-4"
+    };
+
+    // Default / Standard (Few items)
+    return {
+      ...common,
+      text: "text-4xl md:text-6xl font-black",
+      gap: "gap-3",
+      iconSize: "h-6 w-6",
+      iconPos: "-top-3 -right-3",
+      stagger: 0.05,
+      containerPadding: "p-6"
     };
   };
 
@@ -509,7 +538,28 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                   </div>
 
                   <div className="flex justify-between items-center mb-4 px-4 pt-2">
-                    <div className="flex-1"></div> {/* Spacer */}
+                    <div className="flex-1 flex gap-2">
+                      {showControls && drawnNumbers.length > 0 && !isDrawing && (
+                        <>
+                          <Button
+                            onClick={handleConfirmAll}
+                            variant="outline"
+                            className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 hover:border-green-300 transition-colors"
+                          >
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            ยืนยันทั้งหมด
+                          </Button>
+                          <Button
+                            onClick={handleUnconfirmAll}
+                            variant="outline"
+                            className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors"
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            ยกเลิกทั้งหมด
+                          </Button>
+                        </>
+                      )}
+                    </div> {/* Spacer/Controls */}
                     {showControls && (
                       <div className="relative">
                         <input
@@ -526,7 +576,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                   <div className={`flex-1 min-h-0 overflow-y-auto mb-8 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex flex-col ${layout.containerPadding}`}>
                     <div
                       className={`grid w-full ${layout.gap}`}
-                      style={{ gridTemplateColumns: 'repeat(10, 1fr)' }}
+                      style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}
                     >
                       {/* 1. Show existing drawn numbers */}
                       {drawnNumbers.map((num, idx) => {
