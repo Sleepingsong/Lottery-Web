@@ -540,14 +540,14 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                     </motion.div>
                   </div>
 
-                  <div className="flex justify-between items-center mb-4 px-4 pt-2">
-                    <div className="flex-1 flex gap-2">
+                  <div className="flex flex-col md:flex-row justify-between items-center mb-4 px-4 pt-2 gap-4">
+                    <div className="flex-1 flex flex-wrap justify-center md:justify-start gap-2 w-full md:w-auto">
                       {showControls && drawnNumbers.length > 0 && !isDrawing && (
                         <>
                           <Button
                             onClick={handleConfirmAll}
                             variant="outline"
-                            className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 hover:border-green-300 transition-colors"
+                            className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 hover:border-green-300 transition-colors flex-1 md:flex-none"
                           >
                             <CheckCircle2 className="mr-2 h-4 w-4" />
                             ยืนยันทั้งหมด
@@ -555,7 +555,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                           <Button
                             onClick={handleUnconfirmAll}
                             variant="outline"
-                            className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors"
+                            className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors flex-1 md:flex-none"
                           >
                             <XCircle className="mr-2 h-4 w-4" />
                             ยกเลิกทั้งหมด
@@ -564,13 +564,13 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                       )}
                     </div> {/* Spacer/Controls */}
                     {showControls && (
-                      <div className="relative">
+                      <div className="relative w-full md:w-auto">
                         <input
                           type="text"
                           placeholder="ค้นหาตัวเลข..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-64 px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm text-sm transition-all text-center"
+                          className="w-full md:w-64 px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm text-sm transition-all text-center"
                         />
                       </div>
                     )}
