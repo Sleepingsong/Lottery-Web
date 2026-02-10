@@ -442,7 +442,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
       text: "text-lg md:text-xl font-extrabold",
       gap: "gap-1.5",
       iconSize: "h-3 w-3",
-      iconPos: "-top-1 -right-1",
+      iconPos: "top-1 right-1",
       stagger: 0.002,
       containerPadding: "p-3"
     };
@@ -452,7 +452,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
       text: "text-2xl md:text-3xl font-extrabold",
       gap: "gap-2",
       iconSize: "h-4 w-4",
-      iconPos: "-top-1.5 -right-1.5",
+      iconPos: "top-2 right-2",
       stagger: 0.005,
       containerPadding: "p-4"
     };
@@ -463,7 +463,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
       text: "text-4xl md:text-6xl font-black",
       gap: "gap-3",
       iconSize: "h-6 w-6",
-      iconPos: "-top-3 -right-3",
+      iconPos: "top-2 right-2",
       stagger: 0.05,
       containerPadding: "p-6"
     };
