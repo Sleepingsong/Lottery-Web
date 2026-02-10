@@ -55,6 +55,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
   const [newPrizeName, setNewPrizeName] = useState('');
   const [newPrizeQuantity, setNewPrizeQuantity] = useState(1);
   const [previousAllPrizesLength, setPreviousAllPrizesLength] = useState(initialPrizes.length);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // --- DERIVED STATE ---
   const allPrizes = React.useMemo(() => {
@@ -230,7 +231,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     }
   }, [allPrizes.length, previousAllPrizesLength, sortedPrizes.length, role]);
 
-  const generateRandomNumber = () => {
+  const generateRandomNumber = (temporarySet?: Set<number>) => {
     let num: number;
     let attempts = 0;
     const maxAttempts = 1000;
@@ -238,7 +239,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
       num = Math.floor(Math.random() * 999) + 1;
       attempts++;
       if (attempts > maxAttempts) break;
-    } while (usedNumbers.has(num));
+    } while (usedNumbers.has(num) || (temporarySet && temporarySet.has(num)));
     return num;
   };
 
@@ -270,8 +271,12 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     // 2. Wait 2 seconds then finalize
     setTimeout(() => {
       const newNumbers: number[] = [];
+      const tempSet = new Set<number>();
+
       for (let i = 0; i < quantityToDraw; i++) {
-        newNumbers.push(generateRandomNumber());
+        const num = generateRandomNumber(tempSet);
+        newNumbers.push(num);
+        tempSet.add(num);
       }
 
       // Logic Update: 
@@ -503,6 +508,26 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                     </motion.div>
                   </div>
 
+                  <div className="flex justify-between items-center mb-4 px-4 pt-2">
+                    <div className="flex-1"></div> {/* Spacer */}
+                    {showControls && (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="ค้นหาตัวเลข..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm text-sm"
+                        />
+                        <div className="absolute left-3 top-2.5 text-gray-400">
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className={`flex-1 min-h-0 overflow-y-auto mb-8 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex flex-col ${layout.containerPadding}`}>
                     <div
                       className={`grid w-full ${layout.gap}`}
@@ -512,6 +537,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                       {drawnNumbers.map((num, idx) => {
                         const isConfirmed = confirmedNumbers.includes(num);
                         // Removed isCancelled check
+
+                        const isMatch = searchQuery && num.toString().includes(searchQuery);
 
                         // Determine styles based on state
                         // Default Blue (Pending)
@@ -531,11 +558,23 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                           );
                         }
 
+                        // Search Highlight Overrides
+                        if (isMatch) {
+                          bgClass += " ring-4 ring-yellow-400 ring-offset-2 scale-110 z-10";
+                          icon = (
+                            <div className="bg-yellow-400 rounded-full p-1 shadow-md animate-bounce">
+                              <svg className={`text-yellow-900 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                            </div>
+                          );
+                        }
+
                         return (
                           <motion.div
                             key={`drawn-${num}`}
                             initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
+                            animate={{ scale: isMatch ? 1.1 : 1, opacity: 1 }}
                             transition={{
                               type: 'spring', stiffness: 300, damping: 20
                             }}
