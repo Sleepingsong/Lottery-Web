@@ -392,10 +392,15 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
   const quantityToDraw = totalNeeded > 0 ? totalNeeded : (currentPrize?.quantity || 0);
 
   const getSizeClasses = (qty: number) => {
-    // Determine text size based on density, but layout is strictly grid-cols-10 now
+    // Shared defaults
+    const common = {
+      box: "", // Ensure no undefined class
+    };
+
     if (qty > 100) return {
+      ...common,
       text: "text-xs md:text-sm font-extrabold",
-      gap: "gap-1 md:gap-2",
+      gap: "gap-1",
       iconSize: "h-2 w-2",
       iconPos: "-top-1 -right-1",
       stagger: 0.002,
@@ -403,18 +408,21 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     };
 
     if (qty > 50) return {
+      ...common,
       text: "text-sm md:text-base font-extrabold",
-      gap: "gap-1.5 md:gap-2",
+      gap: "gap-1.5",
       iconSize: "h-3 w-3",
       iconPos: "-top-1.5 -right-1.5",
       stagger: 0.005,
       containerPadding: "p-3"
     };
 
+    // Default / Standard
     return {
-      text: "text-lg md:text-3xl font-black",
-      gap: "gap-2 md:gap-4",
-      iconSize: "h-4 w-4 md:h-5 md:w-5",
+      ...common,
+      text: "text-base md:text-2xl font-black",
+      gap: "gap-2",
+      iconSize: "h-4 w-4",
       iconPos: "-top-2 -right-2",
       stagger: 0.05,
       containerPadding: "p-4"
@@ -490,8 +498,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                   </div>
 
                   <div className={`flex-1 min-h-0 overflow-y-auto mb-8 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex flex-col ${layout.containerPadding}`}>
-                    <div className={`grid grid-cols-5 md:grid-cols-10 auto-rows-min content-start m-auto w-full ${layout.gap}`}>
-                      {/* 1. Show existing drawn numbers (which might be Confirmed, Cancelled, or Pending) */}
+                    <div className={`grid grid-cols-10 auto-rows-min content-start w-full ${layout.gap}`}>
+                      {/* 1. Show existing drawn numbers */}
                       {drawnNumbers.map((num, idx) => {
                         const isConfirmed = confirmedNumbers.includes(num);
                         const isCancelled = cancelledNumbers.includes(num);
@@ -513,11 +521,11 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                             </div>
                           );
                         } else if (isCancelled) {
-                          // Red (Cancelled) - Explicitly darker red to distinguish
-                          bgClass = "bg-red-500 shadow-red-200 border-2 border-red-400";
+                          // Red (Cancelled)
+                          bgClass = "!bg-red-600 shadow-red-800 border-2 border-red-700";
                           icon = (
-                            <div className="bg-white rounded-full p-0.5 shadow-sm">
-                              <svg className={`text-red-600 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div className="bg-red-800 rounded-full p-0.5 shadow-sm">
+                              <svg className={`text-white ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                               </svg>
                             </div>
@@ -535,7 +543,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                             className="relative flex flex-col gap-2 cursor-pointer aspect-square"
                             onClick={() => handleNumberClick(num)}
                           >
-                            <div className={`w-full h-full relative flex items-center justify-center shadow-lg transition-all duration-200 rounded-xl md:rounded-2xl ${bgClass}`}>
+                            <div className={`w-full h-full relative flex items-center justify-center shadow-lg transition-all duration-200 rounded-lg md:rounded-xl ${bgClass} ${layout.box}`}>
                               <div className={`${textClass} ${layout.text}`}>{num}</div>
                               <div className={`absolute ${layout.iconPos}`}>
                                 {icon}
@@ -545,14 +553,14 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                         );
                       })}
 
-                      {/* 2. Show animating numbers (Temporary spinner) */}
+                      {/* 2. Show animating numbers */}
                       {animatingNumbers.map((num, idx) => (
                         <motion.div
                           key={`animating-${idx}`}
                           initial={{ scale: 0.5, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={{ delay: idx * layout.stagger, type: 'spring', stiffness: 300, damping: 20 }}
-                          className={`relative flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl md:rounded-2xl aspect-square`}
+                          className={`relative flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl aspect-square ${layout.box}`}
                         >
                           <motion.div
                             animate={{ scale: [1, 1.1, 1] }}
@@ -564,7 +572,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                         </motion.div>
                       ))}
 
-                      {/* 3. Show empty slots if needed (only if NO numbers are drawn or animating) */}
+                      {/* 3. Show empty slots */}
                       {drawnNumbers.length === 0 && animatingNumbers.length === 0 && (
                         Array(currentPrize.quantity)
                           .fill(null)
@@ -574,7 +582,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                               initial={{ scale: 0.5, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
                               transition={{ delay: idx * layout.stagger }}
-                              className={`relative flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl md:rounded-2xl aspect-square`}
+                              className={`relative flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg md:rounded-xl aspect-square ${layout.box}`}
                             />
                           ))
                       )}
