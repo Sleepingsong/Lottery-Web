@@ -247,9 +247,18 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
 
     // 1. Start Drawing State
     setIsDrawing(true);
-    const quantity = totalNeeded > 0 ? totalNeeded - confirmedCount : currentPrize.quantity;
 
-    // Set total needed first if needed
+    // Calculate how many MORE we need.
+    // If we have 5 confirmed and need 10 total, we draw 5.
+    const targetTotal = totalNeeded > 0 ? totalNeeded : currentPrize.quantity;
+    const quantityToDraw = Math.max(0, targetTotal - confirmedCount);
+
+    if (quantityToDraw === 0) {
+      setIsDrawing(false);
+      return;
+    }
+
+    // Set total needed first if needed (for initial setup)
     if (totalNeeded === 0) {
       setTotalNeeded(currentPrize.quantity);
     }
@@ -257,13 +266,19 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     // 2. Wait 2 seconds then finalize
     setTimeout(() => {
       const newNumbers: number[] = [];
-      for (let i = 0; i < quantity; i++) {
+      for (let i = 0; i < quantityToDraw; i++) {
         newNumbers.push(generateRandomNumber());
       }
 
-      // Append to existing drawn numbers instead of replacing
-      // This allows keeping the old confirmed ones on screen if we are drawing remaining
-      setDrawnNumbers((prev) => [...prev, ...newNumbers]);
+      // Logic Update: 
+      // User wants to KEED confirmed numbers, but REPLACE unconfirmed ones with new draws.
+      // So we filter drawnNumbers to keep only confirmed ones, then append new ones.
+      setDrawnNumbers((prev) => {
+        // Keep ONLY the ones that are currently confirmed
+        const keptNumbers = prev.filter(n => confirmedNumbers.includes(n));
+        return [...keptNumbers, ...newNumbers];
+      });
+
       setIsDrawing(false);
     }, 2000);
   };
@@ -293,35 +308,22 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
   };
 
   // Toggle Logic: Blue -> Green -> Red -> Green
+  // Toggle Logic: Blue (Pending) <-> Green (Confirmed)
+  // Removed Red (Cancelled) state as requested.
   const handleNumberClick = (numberToToggle: number) => {
     if (role !== 'admin') return;
 
     const isConfirmed = confirmedNumbers.includes(numberToToggle);
-    const isCancelled = cancelledNumbers.includes(numberToToggle);
 
     if (isConfirmed) {
-      // Green -> Red (Cancel)
+      // Green -> Blue (Un-confirm / Pending)
       // 1. Remove from winners
       setWinners((prev) => prev.filter((w) => w.number !== numberToToggle));
       // 2. Remove from confirmedNumbers
       setConfirmedNumbers((prev) => prev.filter((n) => n !== numberToToggle));
-      // 3. Add to cancelledNumbers
-      setCancelledNumbers((prev) => [...prev, numberToToggle]);
-      // 4. Decrease confirmed count
+      // 3. Decrease confirmed count
       setConfirmedCount((prev) => Math.max(0, prev - 1));
-
-    } else if (isCancelled) {
-      // Red -> Green (Confirm)
-      const newWinner: Winner = {
-        id: Date.now().toString() + Math.random(),
-        prizeName: currentPrize.name,
-        number: numberToToggle,
-        timestamp: Date.now(),
-      };
-      setWinners((prev) => [...prev, newWinner]);
-      setConfirmedNumbers((prev) => [...prev, numberToToggle]);
-      setCancelledNumbers((prev) => prev.filter((n) => n !== numberToToggle));
-      setConfirmedCount((prev) => prev + 1);
+      // Note: We do NOT remove from usedNumbers because it's still "on screen" as Blue.
 
     } else {
       // Blue -> Green (Confirm)
@@ -505,7 +507,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                       {/* 1. Show existing drawn numbers */}
                       {drawnNumbers.map((num, idx) => {
                         const isConfirmed = confirmedNumbers.includes(num);
-                        const isCancelled = cancelledNumbers.includes(num);
+                        // Removed isCancelled check
 
                         // Determine styles based on state
                         // Default Blue (Pending)
@@ -520,16 +522,6 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                             <div className="bg-white rounded-full p-0.5 shadow-sm">
                               <svg className={`text-green-600 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                          );
-                        } else if (isCancelled) {
-                          // Red (Cancelled)
-                          bgClass = "!bg-red-600 shadow-red-800 border-2 border-red-700";
-                          icon = (
-                            <div className="bg-red-800 rounded-full p-0.5 shadow-sm">
-                              <svg className={`text-white ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                               </svg>
                             </div>
                           );
