@@ -29,6 +29,7 @@ interface GameState {
   isDrawing: boolean;
   drawnNumbers: number[];
   confirmedNumbers: number[];
+  cancelledNumbers?: number[]; // Optional to handle backward compatibility
   confirmedCount: number;
   totalNeeded: number;
   usedNumbers: number[]; // Set cannot be serialized to JSON, use array
@@ -391,21 +392,18 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
   const quantityToDraw = totalNeeded > 0 ? totalNeeded : (currentPrize?.quantity || 0);
 
   const getSizeClasses = (qty: number) => {
-    // Ultra Compact (> 150 items)
-    if (qty > 150) return {
-      box: "w-8 h-8 md:w-9 md:h-9 rounded-md",
-      text: "text-sm md:text-base font-extrabold",
-      gap: "gap-1",
+    // Determine text size based on density, but layout is strictly grid-cols-10 now
+    if (qty > 100) return {
+      text: "text-xs md:text-sm font-extrabold",
+      gap: "gap-1 md:gap-2",
       iconSize: "h-2 w-2",
       iconPos: "-top-1 -right-1",
       stagger: 0.002,
       containerPadding: "p-2"
     };
 
-    // Very Compact (> 80 items)
-    if (qty > 80) return {
-      box: "w-10 h-10 md:w-11 md:h-11 rounded-lg",
-      text: "text-base md:text-lg font-extrabold",
+    if (qty > 50) return {
+      text: "text-sm md:text-base font-extrabold",
       gap: "gap-1.5 md:gap-2",
       iconSize: "h-3 w-3",
       iconPos: "-top-1.5 -right-1.5",
@@ -413,37 +411,13 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
       containerPadding: "p-3"
     };
 
-    // Compact (> 40 items) - Addresses user's "> 50" concern
-    if (qty > 40) return {
-      box: "w-12 h-12 md:w-14 md:h-14 rounded-lg",
-      text: "text-xl md:text-2xl font-extrabold",
-      gap: "gap-2 md:gap-3",
-      iconSize: "h-3.5 w-3.5",
-      iconPos: "-top-1.5 -right-1.5",
-      stagger: 0.01,
-      containerPadding: "p-4"
-    };
-
-    // Medium (> 20 items)
-    if (qty > 20) return {
-      box: "w-16 h-16 md:w-20 md:h-20 rounded-xl",
-      text: "text-2xl md:text-3xl font-extrabold",
-      gap: "gap-2.5 md:gap-4",
-      iconSize: "h-4 w-4",
-      iconPos: "-top-2 -right-2",
-      stagger: 0.02,
-      containerPadding: "p-4"
-    };
-
-    // Standard
     return {
-      box: "w-24 h-24 md:w-32 md:h-32 rounded-2xl",
-      text: "text-4xl md:text-5xl font-black",
-      gap: "gap-4 md:gap-6",
-      iconSize: "h-5 w-5",
+      text: "text-lg md:text-3xl font-black",
+      gap: "gap-2 md:gap-4",
+      iconSize: "h-4 w-4 md:h-5 md:w-5",
       iconPos: "-top-2 -right-2",
       stagger: 0.05,
-      containerPadding: "p-6"
+      containerPadding: "p-4"
     };
   };
 
@@ -516,20 +490,21 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                   </div>
 
                   <div className={`flex-1 min-h-0 overflow-y-auto mb-8 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex flex-col ${layout.containerPadding}`}>
-                    <div className={`flex flex-wrap justify-center content-start m-auto w-full h-full ${layout.gap}`}>
+                    <div className={`grid grid-cols-5 md:grid-cols-10 auto-rows-min content-start m-auto w-full ${layout.gap}`}>
                       {/* 1. Show existing drawn numbers (which might be Confirmed, Cancelled, or Pending) */}
                       {drawnNumbers.map((num, idx) => {
                         const isConfirmed = confirmedNumbers.includes(num);
                         const isCancelled = cancelledNumbers.includes(num);
 
                         // Determine styles based on state
-                        let bgClass = "bg-blue-500";
+                        // Default Blue (Pending)
+                        let bgClass = "bg-blue-500 shadow-blue-200 border-2 border-blue-400";
                         let textClass = "text-white";
-                        let icon = <Sparkles className={`text-blue-200 ${layout.iconSize}`} />;
-                        let statusText = null;
+                        let icon = <Sparkles className={`text-blue-100 ${layout.iconSize}`} />;
 
                         if (isConfirmed) {
-                          bgClass = "bg-green-500";
+                          // Green (Confirmed)
+                          bgClass = "bg-green-500 shadow-green-200 border-2 border-green-400";
                           icon = (
                             <div className="bg-white rounded-full p-0.5 shadow-sm">
                               <svg className={`text-green-600 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -538,7 +513,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                             </div>
                           );
                         } else if (isCancelled) {
-                          bgClass = "bg-red-500";
+                          // Red (Cancelled) - Explicitly darker red to distinguish
+                          bgClass = "bg-red-500 shadow-red-200 border-2 border-red-400";
                           icon = (
                             <div className="bg-white rounded-full p-0.5 shadow-sm">
                               <svg className={`text-red-600 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -554,14 +530,12 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                             initial={{ scale: 0.5, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{
-                              // Only animate entrance if it's new (at the end of the list)
-                              // Or simply we rely on key uniqueness. Since we append, existing ones don't re-mount.
                               type: 'spring', stiffness: 300, damping: 20
                             }}
-                            className="relative flex flex-col gap-2 cursor-pointer"
+                            className="relative flex flex-col gap-2 cursor-pointer aspect-square"
                             onClick={() => handleNumberClick(num)}
                           >
-                            <div className={`relative flex items-center justify-center shadow-lg transition-colors duration-200 ${bgClass} ${layout.box}`}>
+                            <div className={`w-full h-full relative flex items-center justify-center shadow-lg transition-all duration-200 rounded-xl md:rounded-2xl ${bgClass}`}>
                               <div className={`${textClass} ${layout.text}`}>{num}</div>
                               <div className={`absolute ${layout.iconPos}`}>
                                 {icon}
@@ -578,7 +552,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                           initial={{ scale: 0.5, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={{ delay: idx * layout.stagger, type: 'spring', stiffness: 300, damping: 20 }}
-                          className={`relative flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 ${layout.box}`}
+                          className={`relative flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl md:rounded-2xl aspect-square`}
                         >
                           <motion.div
                             animate={{ scale: [1, 1.1, 1] }}
@@ -600,7 +574,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                               initial={{ scale: 0.5, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
                               transition={{ delay: idx * layout.stagger }}
-                              className={`relative flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 ${layout.box}`}
+                              className={`relative flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl md:rounded-2xl aspect-square`}
                             />
                           ))
                       )}
