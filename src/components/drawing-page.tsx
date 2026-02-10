@@ -248,6 +248,10 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     // 1. Start Drawing State
     setIsDrawing(true);
 
+    // IMMEDIATE UPDATE: Clear unconfirmed numbers instantly when starting to draw.
+    // This ensures only the Green (confirmed) numbers remain on screen while we wait for new ones.
+    setDrawnNumbers((prev) => prev.filter(n => confirmedNumbers.includes(n)));
+
     // Calculate how many MORE we need.
     // If we have 5 confirmed and need 10 total, we draw 5.
     const targetTotal = totalNeeded > 0 ? totalNeeded : currentPrize.quantity;
