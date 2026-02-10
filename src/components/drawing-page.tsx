@@ -43,6 +43,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawnNumbers, setDrawnNumbers] = useState<number[]>([]);
   const [confirmedNumbers, setConfirmedNumbers] = useState<number[]>([]);
+  const [cancelledNumbers, setCancelledNumbers] = useState<number[]>([]);
   const [confirmedCount, setConfirmedCount] = useState(0);
   const [totalNeeded, setTotalNeeded] = useState(0);
   const [usedNumbers, setUsedNumbers] = useState<Set<number>>(new Set());
@@ -103,6 +104,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
         isDrawing,
         drawnNumbers,
         confirmedNumbers,
+        cancelledNumbers, // Sync this too
         confirmedCount,
         totalNeeded,
         usedNumbers: Array.from(usedNumbers),
@@ -110,7 +112,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     }
-  }, [role, winners, currentPrizeIndex, isDrawing, drawnNumbers, confirmedNumbers, confirmedCount, totalNeeded, usedNumbers, specialPrizes]);
+  }, [role, winners, currentPrizeIndex, isDrawing, drawnNumbers, confirmedNumbers, cancelledNumbers, confirmedCount, totalNeeded, usedNumbers, specialPrizes]);
 
   // Display: Listen for changes from localStorage
   useEffect(() => {
@@ -125,6 +127,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
               setIsDrawing(newState.isDrawing);
               setDrawnNumbers(newState.drawnNumbers);
               setConfirmedNumbers(newState.confirmedNumbers);
+              setCancelledNumbers(newState.cancelledNumbers || []); // Handle older state
               setConfirmedCount(newState.confirmedCount);
               setTotalNeeded(newState.totalNeeded);
               setUsedNumbers(new Set(newState.usedNumbers));
@@ -139,6 +142,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
             setIsDrawing(false);
             setDrawnNumbers([]);
             setConfirmedNumbers([]);
+            setCancelledNumbers([]);
             setConfirmedCount(0);
             setTotalNeeded(0);
             setUsedNumbers(new Set());
@@ -157,6 +161,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
           setIsDrawing(newState.isDrawing);
           setDrawnNumbers(newState.drawnNumbers);
           setConfirmedNumbers(newState.confirmedNumbers);
+          setCancelledNumbers(newState.cancelledNumbers || []);
           setConfirmedCount(newState.confirmedCount);
           setTotalNeeded(newState.totalNeeded);
           setUsedNumbers(new Set(newState.usedNumbers));
@@ -216,6 +221,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
       setTotalNeeded(0);
       setDrawnNumbers([]);
       setConfirmedNumbers([]);
+      setCancelledNumbers([]);
       setPreviousAllPrizesLength(allPrizes.length);
     } else if (role === 'display') {
       // Just update the trackers
@@ -254,8 +260,9 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
         newNumbers.push(generateRandomNumber());
       }
 
-      // Update state (will trigger sync)
-      setDrawnNumbers(newNumbers);
+      // Append to existing drawn numbers instead of replacing
+      // This allows keeping the old confirmed ones on screen if we are drawing remaining
+      setDrawnNumbers((prev) => [...prev, ...newNumbers]);
       setIsDrawing(false);
     }, 2000);
   };
@@ -263,7 +270,14 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
   const confirmDrawnNumbers = () => {
     if (role !== 'admin' || drawnNumbers.length === 0) return;
 
-    const newWinners = drawnNumbers.map((num) => ({
+    // Filter only those that are NOT already confirmed or cancelled (Blue ones)
+    const numbersToConfirm = drawnNumbers.filter(
+      n => !confirmedNumbers.includes(n) && !cancelledNumbers.includes(n)
+    );
+
+    if (numbersToConfirm.length === 0) return;
+
+    const newWinners = numbersToConfirm.map((num) => ({
       id: Date.now().toString() + Math.random(),
       prizeName: currentPrize.name,
       number: num,
@@ -271,45 +285,56 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     }));
 
     setWinners((prev) => [...prev, ...newWinners]);
-    setConfirmedCount((prev) => prev + drawnNumbers.length);
-    setConfirmedNumbers((prev) => [...prev, ...drawnNumbers]);
-    setDrawnNumbers([]);
-    setUsedNumbers((prev) => new Set([...prev, ...drawnNumbers]));
+    setConfirmedCount((prev) => prev + numbersToConfirm.length);
+    setConfirmedNumbers((prev) => [...prev, ...numbersToConfirm]);
+    // Note: We do NOT clear drawnNumbers anymore, they stay on screen as history
+    setUsedNumbers((prev) => new Set([...prev, ...numbersToConfirm]));
   };
 
-  const confirmSingleNumber = (numberToConfirm: number) => {
-    if (role !== 'admin') return;
-    const newWinner: Winner = {
-      id: Date.now().toString() + Math.random(),
-      prizeName: currentPrize.name,
-      number: numberToConfirm,
-      timestamp: Date.now(),
-    };
-
-    setWinners((prev) => [...prev, newWinner]);
-    setConfirmedCount((prev) => prev + 1);
-    setConfirmedNumbers((prev) => [...prev, numberToConfirm]);
-    setDrawnNumbers((prev) => prev.filter((num) => num !== numberToConfirm));
-    setUsedNumbers((prev) => new Set([...prev, numberToConfirm]));
-  };
-
-  const cancelConfirmedNumber = (numberToCancel: number) => {
+  // Toggle Logic: Blue -> Green -> Red -> Green
+  const handleNumberClick = (numberToToggle: number) => {
     if (role !== 'admin') return;
 
-    // 1. Remove from winners
-    setWinners((prev) => prev.filter((w) => w.number !== numberToCancel));
+    const isConfirmed = confirmedNumbers.includes(numberToToggle);
+    const isCancelled = cancelledNumbers.includes(numberToToggle);
 
-    // 2. Remove from confirmedNumbers
-    setConfirmedNumbers((prev) => prev.filter((n) => n !== numberToCancel));
+    if (isConfirmed) {
+      // Green -> Red (Cancel)
+      // 1. Remove from winners
+      setWinners((prev) => prev.filter((w) => w.number !== numberToToggle));
+      // 2. Remove from confirmedNumbers
+      setConfirmedNumbers((prev) => prev.filter((n) => n !== numberToToggle));
+      // 3. Add to cancelledNumbers
+      setCancelledNumbers((prev) => [...prev, numberToToggle]);
+      // 4. Decrease confirmed count
+      setConfirmedCount((prev) => Math.max(0, prev - 1));
 
-    // 3. Decrease count
-    setConfirmedCount((prev) => Math.max(0, prev - 1));
+    } else if (isCancelled) {
+      // Red -> Green (Confirm)
+      const newWinner: Winner = {
+        id: Date.now().toString() + Math.random(),
+        prizeName: currentPrize.name,
+        number: numberToToggle,
+        timestamp: Date.now(),
+      };
+      setWinners((prev) => [...prev, newWinner]);
+      setConfirmedNumbers((prev) => [...prev, numberToToggle]);
+      setCancelledNumbers((prev) => prev.filter((n) => n !== numberToToggle));
+      setConfirmedCount((prev) => prev + 1);
 
-    // 4. Add back to drawnNumbers (so it becomes pending again)
-    setDrawnNumbers((prev) => [...prev, numberToCancel]);
-
-    // Note: We keep it in 'usedNumbers' because it's still physically on the board (just moved state),
-    // so we don't want to generate a duplicate of it while it's pending.
+    } else {
+      // Blue -> Green (Confirm)
+      const newWinner: Winner = {
+        id: Date.now().toString() + Math.random(),
+        prizeName: currentPrize.name,
+        number: numberToToggle,
+        timestamp: Date.now(),
+      };
+      setWinners((prev) => [...prev, newWinner]);
+      setConfirmedNumbers((prev) => [...prev, numberToToggle]);
+      setConfirmedCount((prev) => prev + 1);
+      setUsedNumbers((prev) => new Set([...prev, numberToToggle]));
+    }
   };
 
   const drawRemainingNumbers = () => {
@@ -323,6 +348,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     setTotalNeeded(0);
     setDrawnNumbers([]);
     setConfirmedNumbers([]);
+    setCancelledNumbers([]);
   };
 
   // Group winners
@@ -368,7 +394,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     // Ultra Compact (> 150 items)
     if (qty > 150) return {
       box: "w-8 h-8 md:w-9 md:h-9 rounded-md",
-      text: "text-xs md:text-sm",
+      text: "text-sm md:text-base font-extrabold",
       gap: "gap-1",
       iconSize: "h-2 w-2",
       iconPos: "-top-1 -right-1",
@@ -379,7 +405,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     // Very Compact (> 80 items)
     if (qty > 80) return {
       box: "w-10 h-10 md:w-11 md:h-11 rounded-lg",
-      text: "text-sm md:text-base",
+      text: "text-base md:text-lg font-extrabold",
       gap: "gap-1.5 md:gap-2",
       iconSize: "h-3 w-3",
       iconPos: "-top-1.5 -right-1.5",
@@ -390,7 +416,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     // Compact (> 40 items) - Addresses user's "> 50" concern
     if (qty > 40) return {
       box: "w-12 h-12 md:w-14 md:h-14 rounded-lg",
-      text: "text-lg md:text-xl",
+      text: "text-xl md:text-2xl font-extrabold",
       gap: "gap-2 md:gap-3",
       iconSize: "h-3.5 w-3.5",
       iconPos: "-top-1.5 -right-1.5",
@@ -401,7 +427,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     // Medium (> 20 items)
     if (qty > 20) return {
       box: "w-16 h-16 md:w-20 md:h-20 rounded-xl",
-      text: "text-xl md:text-2xl",
+      text: "text-2xl md:text-3xl font-extrabold",
       gap: "gap-2.5 md:gap-4",
       iconSize: "h-4 w-4",
       iconPos: "-top-2 -right-2",
@@ -412,7 +438,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     // Standard
     return {
       box: "w-24 h-24 md:w-32 md:h-32 rounded-2xl",
-      text: "text-3xl md:text-4xl",
+      text: "text-4xl md:text-5xl font-black",
       gap: "gap-4 md:gap-6",
       iconSize: "h-5 w-5",
       iconPos: "-top-2 -right-2",
@@ -490,106 +516,82 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                   </div>
 
                   <div className={`flex-1 min-h-0 overflow-y-auto mb-8 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex flex-col ${layout.containerPadding}`}>
-                    <div className={`flex flex-wrap justify-center content-center m-auto w-full h-full ${layout.gap}`}>
-                      {animatingNumbers.length > 0 ? (
-                        <>
-                          {confirmedNumbers.map((num, idx) => (
-                            <motion.div key={`confirmed-${num}-${idx}`} className="relative flex flex-col gap-2">
-                              <div className={`relative flex items-center justify-center bg-green-500 shadow-lg ${layout.box}`}>
-                                <div className={`text-white font-bold ${layout.text}`}>{num}</div>
-                                <div className={`absolute bg-white rounded-full p-1 shadow-md ${layout.iconPos}`}>
-                                  <svg className={`text-green-600 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                </div>
+                    <div className={`flex flex-wrap justify-center content-start m-auto w-full h-full ${layout.gap}`}>
+                      {/* 1. Show existing drawn numbers (which might be Confirmed, Cancelled, or Pending) */}
+                      {drawnNumbers.map((num, idx) => {
+                        const isConfirmed = confirmedNumbers.includes(num);
+                        const isCancelled = cancelledNumbers.includes(num);
+
+                        // Determine styles based on state
+                        let bgClass = "bg-blue-500";
+                        let textClass = "text-white";
+                        let icon = <Sparkles className={`text-blue-200 ${layout.iconSize}`} />;
+                        let statusText = null;
+
+                        if (isConfirmed) {
+                          bgClass = "bg-green-500";
+                          icon = (
+                            <div className="bg-white rounded-full p-0.5 shadow-sm">
+                              <svg className={`text-green-600 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          );
+                        } else if (isCancelled) {
+                          bgClass = "bg-red-500";
+                          icon = (
+                            <div className="bg-white rounded-full p-0.5 shadow-sm">
+                              <svg className={`text-red-600 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <motion.div
+                            key={`drawn-${num}`}
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{
+                              // Only animate entrance if it's new (at the end of the list)
+                              // Or simply we rely on key uniqueness. Since we append, existing ones don't re-mount.
+                              type: 'spring', stiffness: 300, damping: 20
+                            }}
+                            className="relative flex flex-col gap-2 cursor-pointer"
+                            onClick={() => handleNumberClick(num)}
+                          >
+                            <div className={`relative flex items-center justify-center shadow-lg transition-colors duration-200 ${bgClass} ${layout.box}`}>
+                              <div className={`${textClass} ${layout.text}`}>{num}</div>
+                              <div className={`absolute ${layout.iconPos}`}>
+                                {icon}
                               </div>
-                              {showControls && <div className="text-center text-green-600 text-xs">ยืนยันแล้ว</div>}
-                            </motion.div>
-                          ))}
-                          {animatingNumbers.map((num, idx) => (
-                            <motion.div
-                              key={`animating-${idx}`}
-                              initial={{ scale: 0.5, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              transition={{ delay: idx * layout.stagger, type: 'spring', stiffness: 300, damping: 20 }}
-                              className={`relative flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 ${layout.box}`}
-                            >
-                              <motion.div
-                                animate={{ scale: [1, 1.1, 1] }}
-                                transition={{ duration: 0.05, repeat: Infinity }}
-                                className={`text-gray-600 font-bold ${layout.text}`}
-                              >
-                                {num}
-                              </motion.div>
-                            </motion.div>
-                          ))}
-                        </>
-                      ) : confirmedNumbers.length > 0 || drawnNumbers.length > 0 ? (
-                        <>
-                          {confirmedNumbers.map((num, idx) => (
-                            <motion.div
-                              key={`confirmed-${num}-${idx}`}
-                              initial={{ scale: 0.5, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              transition={{ delay: idx * layout.stagger, type: 'spring', stiffness: 300, damping: 20 }}
-                              className="relative flex flex-col gap-2"
-                            >
-                              <div className={`relative flex items-center justify-center bg-green-500 shadow-lg ${layout.box}`}>
-                                <div className={`text-white font-bold ${layout.text}`}>{num}</div>
-                                <div className={`absolute bg-white rounded-full p-1 shadow-md ${layout.iconPos}`}>
-                                  <svg className={`text-green-600 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                </div>
-                              </div>
-                              {showControls && (
-                                <div className="text-center flex flex-col gap-1">
-                                  <div className="text-green-600 text-xs">ยืนยันแล้ว</div>
-                                  <Button
-                                    onClick={() => cancelConfirmedNumber(num)}
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 text-[10px] text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    ยกเลิก
-                                  </Button>
-                                </div>
-                              )}
-                            </motion.div>
-                          ))}
-                          {drawnNumbers.map((num, idx) => (
-                            <motion.div
-                              key={`drawn-${num}-${idx}`}
-                              initial={{ scale: 0.5, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              transition={{ delay: (confirmedNumbers.length + idx) * layout.stagger, type: 'spring', stiffness: 300, damping: 20 }}
-                              className="relative flex flex-col gap-2"
-                            >
-                              <div className={`relative flex items-center justify-center bg-blue-500 shadow-lg ${layout.box}`}>
-                                <div className={`text-white font-bold ${layout.text}`}>{num}</div>
-                                <motion.div
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  className={`absolute ${layout.iconPos}`}
-                                >
-                                  <Sparkles className={`text-blue-200 ${layout.iconSize}`} />
-                                </motion.div>
-                              </div>
-                              {/* Actions only for Admin */}
-                              {showControls && (
-                                <Button
-                                  onClick={() => confirmSingleNumber(num)}
-                                  size="sm"
-                                  className="bg-green-500 hover:bg-green-600 text-white border-0 h-8 text-xs rounded-lg shadow-md"
-                                >
-                                  ยืนยัน
-                                </Button>
-                              )}
-                            </motion.div>
-                          ))}
-                        </>
-                      ) : (
-                        // Empty slots
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+
+                      {/* 2. Show animating numbers (Temporary spinner) */}
+                      {animatingNumbers.map((num, idx) => (
+                        <motion.div
+                          key={`animating-${idx}`}
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: idx * layout.stagger, type: 'spring', stiffness: 300, damping: 20 }}
+                          className={`relative flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 ${layout.box}`}
+                        >
+                          <motion.div
+                            animate={{ scale: [1, 1.1, 1] }}
+                            transition={{ duration: 0.05, repeat: Infinity }}
+                            className={`text-gray-600 ${layout.text}`}
+                          >
+                            {num}
+                          </motion.div>
+                        </motion.div>
+                      ))}
+
+                      {/* 3. Show empty slots if needed (only if NO numbers are drawn or animating) */}
+                      {drawnNumbers.length === 0 && animatingNumbers.length === 0 && (
                         Array(currentPrize.quantity)
                           .fill(null)
                           .map((_, idx) => (
