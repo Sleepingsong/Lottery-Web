@@ -365,29 +365,59 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
   const quantityToDraw = totalNeeded > 0 ? totalNeeded : (currentPrize?.quantity || 0);
 
   const getSizeClasses = (qty: number) => {
-    if (qty > 100) return { // Very large set
-      box: "w-10 h-10 md:w-12 md:h-12 rounded-lg",
-      text: "text-base md:text-lg",
-      gap: "gap-1 md:gap-2",
-      iconSize: "h-3 w-3",
+    // Ultra Compact (> 150 items)
+    if (qty > 150) return {
+      box: "w-8 h-8 md:w-9 md:h-9 rounded-md",
+      text: "text-xs md:text-sm",
+      gap: "gap-1",
+      iconSize: "h-2 w-2",
       iconPos: "-top-1 -right-1",
-      stagger: 0.01
+      stagger: 0.002,
+      containerPadding: "p-2"
     };
-    if (qty > 32) return { // Large set
-      box: "w-14 h-14 md:w-16 md:h-16 rounded-xl",
-      text: "text-xl md:text-2xl",
+
+    // Very Compact (> 80 items)
+    if (qty > 80) return {
+      box: "w-10 h-10 md:w-11 md:h-11 rounded-lg",
+      text: "text-sm md:text-base",
+      gap: "gap-1.5 md:gap-2",
+      iconSize: "h-3 w-3",
+      iconPos: "-top-1.5 -right-1.5",
+      stagger: 0.005,
+      containerPadding: "p-3"
+    };
+
+    // Compact (> 40 items) - Addresses user's "> 50" concern
+    if (qty > 40) return {
+      box: "w-12 h-12 md:w-14 md:h-14 rounded-lg",
+      text: "text-lg md:text-xl",
       gap: "gap-2 md:gap-3",
+      iconSize: "h-3.5 w-3.5",
+      iconPos: "-top-1.5 -right-1.5",
+      stagger: 0.01,
+      containerPadding: "p-4"
+    };
+
+    // Medium (> 20 items)
+    if (qty > 20) return {
+      box: "w-16 h-16 md:w-20 md:h-20 rounded-xl",
+      text: "text-xl md:text-2xl",
+      gap: "gap-2.5 md:gap-4",
       iconSize: "h-4 w-4",
       iconPos: "-top-2 -right-2",
-      stagger: 0.03
+      stagger: 0.02,
+      containerPadding: "p-4"
     };
-    return { // Standard
+
+    // Standard
+    return {
       box: "w-24 h-24 md:w-32 md:h-32 rounded-2xl",
       text: "text-3xl md:text-4xl",
       gap: "gap-4 md:gap-6",
       iconSize: "h-5 w-5",
       iconPos: "-top-2 -right-2",
-      stagger: 0.1
+      stagger: 0.05,
+      containerPadding: "p-6"
     };
   };
 
@@ -459,8 +489,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                     </motion.div>
                   </div>
 
-                  <div className="flex-1 min-h-0 overflow-y-auto mb-8 p-4 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex">
-                    <div className={`flex flex-wrap justify-center m-auto w-full ${layout.gap}`}>
+                  <div className={`flex-1 min-h-0 overflow-y-auto mb-8 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex flex-col ${layout.containerPadding}`}>
+                    <div className={`flex flex-wrap justify-center content-center m-auto w-full h-full ${layout.gap}`}>
                       {animatingNumbers.length > 0 ? (
                         <>
                           {confirmedNumbers.map((num, idx) => (
