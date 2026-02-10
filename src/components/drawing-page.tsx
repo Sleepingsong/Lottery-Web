@@ -408,8 +408,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                     </motion.div>
                   </div>
 
-                  <div className="flex-1 flex items-center justify-center mb-8">
-                    <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+                  <div className="flex-1 min-h-0 overflow-y-auto mb-8 p-4 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex">
+                    <div className="flex flex-wrap justify-center gap-4 md:gap-6 m-auto w-full">
                       {animatingNumbers.length > 0 ? (
                         <>
                           {confirmedNumbers.map((num, idx) => (
@@ -731,8 +731,12 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="text-blue-600 mb-1">{prizeName}</div>
-                              <div className="text-2xl text-gray-800">
-                                {prizeWinners.map((winner) => `#${winner.number}`).join(', ')}
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {prizeWinners.map((winner) => (
+                                  <span key={winner.id} className="bg-white/60 px-2 py-1 rounded-md text-sm text-blue-900 font-medium border border-blue-100/50">
+                                    #{winner.number}
+                                  </span>
+                                ))}
                               </div>
                             </div>
                             <Trophy className="h-8 w-8 text-blue-400" />
