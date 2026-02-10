@@ -293,6 +293,25 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
     setUsedNumbers((prev) => new Set([...prev, numberToConfirm]));
   };
 
+  const cancelConfirmedNumber = (numberToCancel: number) => {
+    if (role !== 'admin') return;
+
+    // 1. Remove from winners
+    setWinners((prev) => prev.filter((w) => w.number !== numberToCancel));
+
+    // 2. Remove from confirmedNumbers
+    setConfirmedNumbers((prev) => prev.filter((n) => n !== numberToCancel));
+
+    // 3. Decrease count
+    setConfirmedCount((prev) => Math.max(0, prev - 1));
+
+    // 4. Add back to drawnNumbers (so it becomes pending again)
+    setDrawnNumbers((prev) => [...prev, numberToCancel]);
+
+    // Note: We keep it in 'usedNumbers' because it's still physically on the board (just moved state),
+    // so we don't want to generate a duplicate of it while it's pending.
+  };
+
   const drawRemainingNumbers = () => {
     if (role === 'admin') startBatchDraw();
   };
@@ -341,6 +360,38 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
 
   // --- RENDER HELPERS ---
   const showControls = role === 'admin';
+
+  // Calculate dynamic layout based on total items to show
+  const quantityToDraw = totalNeeded > 0 ? totalNeeded : (currentPrize?.quantity || 0);
+
+  const getSizeClasses = (qty: number) => {
+    if (qty > 100) return { // Very large set
+      box: "w-10 h-10 md:w-12 md:h-12 rounded-lg",
+      text: "text-base md:text-lg",
+      gap: "gap-1 md:gap-2",
+      iconSize: "h-3 w-3",
+      iconPos: "-top-1 -right-1",
+      stagger: 0.01
+    };
+    if (qty > 32) return { // Large set
+      box: "w-14 h-14 md:w-16 md:h-16 rounded-xl",
+      text: "text-xl md:text-2xl",
+      gap: "gap-2 md:gap-3",
+      iconSize: "h-4 w-4",
+      iconPos: "-top-2 -right-2",
+      stagger: 0.03
+    };
+    return { // Standard
+      box: "w-24 h-24 md:w-32 md:h-32 rounded-2xl",
+      text: "text-3xl md:text-4xl",
+      gap: "gap-4 md:gap-6",
+      iconSize: "h-5 w-5",
+      iconPos: "-top-2 -right-2",
+      stagger: 0.1
+    };
+  };
+
+  const layout = getSizeClasses(quantityToDraw);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex flex-col">
@@ -409,15 +460,15 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                   </div>
 
                   <div className="flex-1 min-h-0 overflow-y-auto mb-8 p-4 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex">
-                    <div className="flex flex-wrap justify-center gap-4 md:gap-6 m-auto w-full">
+                    <div className={`flex flex-wrap justify-center m-auto w-full ${layout.gap}`}>
                       {animatingNumbers.length > 0 ? (
                         <>
                           {confirmedNumbers.map((num, idx) => (
                             <motion.div key={`confirmed-${num}-${idx}`} className="relative flex flex-col gap-2">
-                              <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-2xl flex items-center justify-center bg-green-500 shadow-lg">
-                                <div className="text-3xl md:text-4xl text-white">{num}</div>
-                                <div className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-md">
-                                  <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <div className={`relative flex items-center justify-center bg-green-500 shadow-lg ${layout.box}`}>
+                                <div className={`text-white font-bold ${layout.text}`}>{num}</div>
+                                <div className={`absolute bg-white rounded-full p-1 shadow-md ${layout.iconPos}`}>
+                                  <svg className={`text-green-600 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                   </svg>
                                 </div>
@@ -430,13 +481,13 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                               key={`animating-${idx}`}
                               initial={{ scale: 0, rotate: -180 }}
                               animate={{ scale: 1, rotate: 0 }}
-                              transition={{ delay: idx * 0.1 }}
-                              className="relative w-24 h-24 md:w-32 md:h-32 rounded-2xl flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300"
+                              transition={{ delay: idx * layout.stagger }}
+                              className={`relative flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 ${layout.box}`}
                             >
                               <motion.div
                                 animate={{ scale: [1, 1.1, 1] }}
                                 transition={{ duration: 0.05, repeat: Infinity }}
-                                className="text-3xl md:text-4xl text-gray-600"
+                                className={`text-gray-600 font-bold ${layout.text}`}
                               >
                                 {num}
                               </motion.div>
@@ -450,18 +501,30 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                               key={`confirmed-${num}-${idx}`}
                               initial={{ scale: 0, rotate: -180 }}
                               animate={{ scale: 1, rotate: 0 }}
-                              transition={{ delay: idx * 0.1 }}
+                              transition={{ delay: idx * layout.stagger }}
                               className="relative flex flex-col gap-2"
                             >
-                              <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-2xl flex items-center justify-center bg-green-500 shadow-lg">
-                                <div className="text-3xl md:text-4xl text-white">{num}</div>
-                                <div className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-md">
-                                  <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <div className={`relative flex items-center justify-center bg-green-500 shadow-lg ${layout.box}`}>
+                                <div className={`text-white font-bold ${layout.text}`}>{num}</div>
+                                <div className={`absolute bg-white rounded-full p-1 shadow-md ${layout.iconPos}`}>
+                                  <svg className={`text-green-600 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                   </svg>
                                 </div>
                               </div>
-                              {showControls && <div className="text-center text-green-600 text-xs">ยืนยันแล้ว</div>}
+                              {showControls && (
+                                <div className="text-center flex flex-col gap-1">
+                                  <div className="text-green-600 text-xs">ยืนยันแล้ว</div>
+                                  <Button
+                                    onClick={() => cancelConfirmedNumber(num)}
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 text-[10px] text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    ยกเลิก
+                                  </Button>
+                                </div>
+                              )}
                             </motion.div>
                           ))}
                           {drawnNumbers.map((num, idx) => (
@@ -469,17 +532,17 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                               key={`drawn-${num}-${idx}`}
                               initial={{ scale: 0, rotate: -180 }}
                               animate={{ scale: 1, rotate: 0 }}
-                              transition={{ delay: (confirmedNumbers.length + idx) * 0.1 }}
+                              transition={{ delay: (confirmedNumbers.length + idx) * layout.stagger }}
                               className="relative flex flex-col gap-2"
                             >
-                              <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-2xl flex items-center justify-center bg-blue-500 shadow-lg">
-                                <div className="text-3xl md:text-4xl text-white">{num}</div>
+                              <div className={`relative flex items-center justify-center bg-blue-500 shadow-lg ${layout.box}`}>
+                                <div className={`text-white font-bold ${layout.text}`}>{num}</div>
                                 <motion.div
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
-                                  className="absolute -top-2 -right-2"
+                                  className={`absolute ${layout.iconPos}`}
                                 >
-                                  <Sparkles className="h-6 w-6 text-blue-200" />
+                                  <Sparkles className={`text-blue-200 ${layout.iconSize}`} />
                                 </motion.div>
                               </div>
                               {/* Actions only for Admin */}
@@ -504,8 +567,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                               key={idx}
                               initial={{ scale: 0, rotate: -180 }}
                               animate={{ scale: 1, rotate: 0 }}
-                              transition={{ delay: idx * 0.1 }}
-                              className="relative w-24 h-24 md:w-32 md:h-32 rounded-2xl flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300"
+                              transition={{ delay: idx * layout.stagger }}
+                              className={`relative flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 ${layout.box}`}
                             />
                           ))
                       )}
