@@ -444,7 +444,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
       iconSize: "h-3 w-3",
       iconPos: "top-0 right-0 m-1",
       stagger: 0.002,
-      containerPadding: "p-3"
+      containerPadding: "p-3",
+      gridCols: "grid-cols-5 md:grid-cols-8 lg:grid-cols-10"
     };
 
     if (qty > 50) return {
@@ -454,18 +455,20 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
       iconSize: "h-4 w-4",
       iconPos: "top-0 right-0 m-1.5",
       stagger: 0.005,
-      containerPadding: "p-4"
+      containerPadding: "p-4",
+      gridCols: "grid-cols-4 md:grid-cols-6 lg:grid-cols-8"
     };
 
     // Default / Standard (Few items)
     return {
       ...common,
-      text: "text-4xl md:text-6xl font-black",
-      gap: "gap-3",
-      iconSize: "h-8 w-8",
-      iconPos: "top-0 right-0 m-3",
+      text: "text-3xl sm:text-4xl md:text-6xl font-black",
+      gap: "gap-2 sm:gap-3",
+      iconSize: "h-5 w-5 md:h-8 md:w-8",
+      iconPos: "top-0 right-0 m-2 md:m-3",
       stagger: 0.05,
-      containerPadding: "p-6"
+      containerPadding: "p-4 md:p-6",
+      gridCols: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
     };
   };
 
@@ -575,11 +578,10 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
 
                   <div className={`flex-1 min-h-0 overflow-y-auto mb-8 rounded-2xl bg-gray-50/50 border border-gray-100 shadow-inner flex flex-col ${layout.containerPadding}`}>
                     <div
-                      className={`grid w-full ${layout.gap}`}
-                      style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}
+                      className={`grid w-full ${layout.gap} ${layout.gridCols}`}
                     >
                       {/* 1. Show existing drawn numbers */}
-                      {drawnNumbers.map((num, idx) => {
+                      {drawnNumbers.map((num) => {
                         const isConfirmed = confirmedNumbers.includes(num);
                         // Removed isCancelled check
 
@@ -926,6 +928,6 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }
