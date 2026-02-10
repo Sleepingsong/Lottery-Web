@@ -509,9 +509,9 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                           {animatingNumbers.map((num, idx) => (
                             <motion.div
                               key={`animating-${idx}`}
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ delay: idx * layout.stagger }}
+                              initial={{ scale: 0.5, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: idx * layout.stagger, type: 'spring', stiffness: 300, damping: 20 }}
                               className={`relative flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 ${layout.box}`}
                             >
                               <motion.div
@@ -529,9 +529,9 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                           {confirmedNumbers.map((num, idx) => (
                             <motion.div
                               key={`confirmed-${num}-${idx}`}
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ delay: idx * layout.stagger }}
+                              initial={{ scale: 0.5, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: idx * layout.stagger, type: 'spring', stiffness: 300, damping: 20 }}
                               className="relative flex flex-col gap-2"
                             >
                               <div className={`relative flex items-center justify-center bg-green-500 shadow-lg ${layout.box}`}>
@@ -560,9 +560,9 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                           {drawnNumbers.map((num, idx) => (
                             <motion.div
                               key={`drawn-${num}-${idx}`}
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ delay: (confirmedNumbers.length + idx) * layout.stagger }}
+                              initial={{ scale: 0.5, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: (confirmedNumbers.length + idx) * layout.stagger, type: 'spring', stiffness: 300, damping: 20 }}
                               className="relative flex flex-col gap-2"
                             >
                               <div className={`relative flex items-center justify-center bg-blue-500 shadow-lg ${layout.box}`}>
@@ -595,8 +595,8 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                           .map((_, idx) => (
                             <motion.div
                               key={idx}
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
+                              initial={{ scale: 0.5, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
                               transition={{ delay: idx * layout.stagger }}
                               className={`relative flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 ${layout.box}`}
                             />
