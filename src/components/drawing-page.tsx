@@ -519,7 +519,7 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
                           onChange={(e) => setSearchQuery(e.target.value)}
                           className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm text-sm"
                         />
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <div className="absolute left-3 top-0 bottom-0 flex items-center justify-center text-gray-400">
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                           </svg>
@@ -560,12 +560,11 @@ export function DrawingPage({ prizes: initialPrizes, drawOrder, onBack, role = '
 
                         // Search Highlight Overrides
                         if (isMatch) {
-                          // Force clear background and apply strong yellow highlight
-                          // Use !important on bg and ring to ensure they override
-                          bgClass += " !bg-yellow-500 !ring-4 !ring-yellow-300 ring-offset-2 scale-110 z-50 shadow-xl shadow-yellow-500/50";
+                          // REPLACING bgClass entirely to avoid specificity wars
+                          bgClass = "bg-yellow-400 ring-4 ring-yellow-200 ring-offset-2 scale-110 z-50 shadow-xl shadow-yellow-500/50 border-2 border-yellow-500";
                           textClass = "text-yellow-900 font-extrabold";
                           icon = (
-                            <div className="bg-yellow-200 rounded-full p-1 shadow-md animate-bounce transform origin-center">
+                            <div className="bg-yellow-200 rounded-full p-1 shadow-md animate-bounce origin-center">
                               <svg className={`text-yellow-800 ${layout.iconSize}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                               </svg>
